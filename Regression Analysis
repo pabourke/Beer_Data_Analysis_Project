@@ -1,0 +1,131 @@
+##read in the data##
+beerdata <- read.csv("C:/Users/pbourke.000/Desktop/Data Mining/beer_recipes.csv", header = TRUE)
+library(MASS)
+###data summary
+View(beerdata)
+summary(beerdata)
+
+
+#Convert blanks to NA
+
+beerdata[beerdata==""] <- NA
+
+##select columns needed
+
+mybeer <- beerdata[, c('StyleID','SizeL',
+                       'OG', 'FG', 'ABV', 'Bitterness', 
+                       'Color', 'BoilSize', 'BoilTime', 
+                       'BoilGravity')]
+
+##convert these columns to numeric
+
+mybeer$StyleID = as.numeric(mybeer$StyleID)
+mybeer$SizeL = as.numeric(mybeer$SizeL)
+mybeer$OG = as.numeric(mybeer$OG)
+mybeer$FG = as.numeric(mybeer$FG)
+mybeer$ABV = as.numeric(mybeer$ABV)
+mybeer$Bitterness = as.numeric(mybeer$Bitterness)
+mybeer$Color = as.numeric(mybeer$Color)
+mybeer$BoilSize = as.numeric(mybeer$BoilSize)
+mybeer$BoilTime = as.numeric(mybeer$BoilTime)
+mybeer$BoilGravity = as.numeric(mybeer$BoilGravity)
+
+library(caTools) #sample.split function is present which is useful for training data
+
+##Divided the data with the ratio of 0.75% train and 25% test
+
+n = nrow(mybeer)
+trainIndex = sample(1:n, size = round(0.75*n), replace=FALSE)
+train = mybeer[trainIndex ,]
+test = mybeer[-trainIndex ,]
+
+##alternatve method to break up training and testing data
+
+#split <- sample.split(mybeer$Color, SplitRatio = 0.7)
+#split
+#training_data<-subset(mybeer, split=="True")
+#testing_data<- subset(mybeer, split=="False")
+
+plot(mybeer$Color,mybeer$OG, cex = 0.5,xlab = "Color", ylab = "ABV")
+cr<- cor(mybeer)
+
+library(lattice)
+splom(~mybeer[c(1,2,3)], groups=NULL, data=mybeer, axis.line.tck = 0, axis.text.alpha = 0)
+splom(~mybeer[c(4,5,6)], groups=NULL, data=mybeer, axis.line.tck = 0, axis.text.alpha = 0)
+splom(~mybeer[c(7,8,9)], groups=NULL, data=mybeer, axis.line.tck = 0, axis.text.alpha = 0)
+
+
+
+##regression line fit
+plot(Color~OG, data = mybeer)
+abline(lm(Color ~ OG, data = mybeer), col="red")
+
+
+##correlation plot descriptives
+#makes it easy to see the relationship between the numeric variables
+#must install library
+
+library(corrplot)
+corrplot(as.matrix(cr), type = "lower")
+corrplot(as.matrix(cr), method = "number")
+
+install.packages("caret")
+library(caret)
+
+#finding multicollinearity
+
+##it's possible to remove a variable with the below code
+
+##mybeer_2 = subset(mybeer, select = -C(OG))
+
+#VIF
+#Variance inflation factors (VIF) measure how much the variance of the estimated regression 
+#coefficients are inflated as compared to when the predictor variables are not linearly 
+#related. It is used to explain how much amount multicollinearity (correlation between 
+#predictors) exists in a regression analysis
+
+install.packages(("car"))
+library(car)
+summary(train)
+model <- lm(Color~ OG + FG, data = train)
+vif(model)
+
+
+##health check on training data
+##The bigger VIF this number is the higer the correlation
+
+summary(model)
+
+##remove the variables with <*** of significance
+#model <- lm(Color~ StyleID + OG + FG + ABV + BoilTime + BoilGravity, data = mybeer)
+
+#vif(model)
+#summary(model)
+#r sqaured value has reduced slightly
+
+##now for the prediction
+
+summary(test)
+head(test)
+
+
+pred <- predict(model, test)
+pred
+
+#compare predicted values and actual values
+
+plot(test$Color, type = "l", lty = 1.2, col = "green")
+lines(pred, type = "l",col = "blue")
+
+### if we had "new" or "test" data we could use this code to predict the output
+
+#pred<- predict(model, test)
+#pred
+
+
+
+
+
+
+
+
